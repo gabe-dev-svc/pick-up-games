@@ -3,3 +3,5 @@ node_modules
 out
 *.zip
 bootstrap
+# exclude binary built by go
+pickupgamesapi
