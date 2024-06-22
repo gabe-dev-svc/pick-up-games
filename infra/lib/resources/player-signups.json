@@ -1,0 +1,374 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Pickup Games API",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.server.test/v1"
+    }
+  ],
+  "paths": {
+    "/signin": {
+      "post": {
+        "summary": "Sign in to an account",
+        "operationId": "signinUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignInRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignInResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing parameters"
+          }
+        }
+      }
+    },
+    "/signup": {
+      "post": {
+        "summary": "Sign up for an account",
+        "operationId": "signupUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User signed up"
+          },
+          "400": {
+            "description": "Missing parameters"
+          }
+        }
+      }
+    },
+    "/games/{gameID}/register": {
+      "post": {
+        "summary": "Register for a game",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "gameID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Game not found"
+          },
+          "409": {
+            "description": "Player already registered"
+          }
+        }
+      }
+    },
+    "/games/{gameID}/drop": {
+      "post": {
+        "summary": "Drop from a game",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "gameID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player dropped",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Game not found"
+          },
+          "409": {
+            "description": "Player already registered"
+          }
+        }
+      }
+    },
+    "/games/{gameID}": {
+      "get": {
+        "summary": "Get a game by ID",
+        "parameters": [
+          {
+            "name": "gameID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Game found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Game not found"
+          }
+        }
+      }
+    },
+    "/games": {
+      "get": {
+        "summary": "Get all games",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Category of the game",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of games",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new game",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewGameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Game created"
+          },
+          "400": {
+            "description": "Missing parameters"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "SignInRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "SignInResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "idToken": {
+            "type": "string"
+          },
+          "tokenExpiration": {
+            "type": "string"
+          }
+        }
+      },
+      "NewUserRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": "string"
+          }
+        }
+      },
+      "GameList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Game"
+        }
+      },
+      "NewGameRequest": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date"
+          },
+          "location": {
+            "type": "string"
+          },
+          "durationMins": {
+            "type": "number"
+          },
+          "teamSize": {
+            "type": "number"
+          },
+          "numTeams": {
+            "type": "number"
+          },
+          "signupFeeCents": {
+            "type": "number",
+            "description": "Fee to sign up for the game. Unless pre-populated, will be split evenly among all players once game ends. Must be empty if splitFeeCents is present."
+          },
+          "splitFeeCents": {
+            "type": "number",
+            "description": "Fee split evenly among all players. Must be empty if signupFeeCents is present."
+          }
+        }
+      },
+      "Game": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "description": "Category (sport) of the game"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the game"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date"
+          },
+          "location": {
+            "type": "string"
+          },
+          "roster": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "waitlist": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "teamSize": {
+            "type": "integer"
+          },
+          "numTeams": {
+            "type": "integer"
+          },
+          "signupFeeCents": {
+            "type": "number",
+            "description": "Fee to sign up for the game. Unless pre-populated, will be split evenly among all players once game ends."
+          },
+          "splitFeeCents": {
+            "type": "number",
+            "description": "Fee split evenly among all players. Must be empty if signupFeeCents is present."
+          }
+        }
+      }
+    }
+  }
+}
