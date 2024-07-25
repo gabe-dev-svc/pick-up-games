@@ -1,0 +1,7 @@
+# Signups Lambda Application
+
+The purpose of this project/sub-project is purely to demonstrate proficiency with writing Java and to vary my day-to-day from regular Go and Python work. However, implementation of the `/games` APIs are being ditched as of 23 Jul 2024 because the cold-start times for Lambdas running Java are just awful.
+
+Encountered drawbacks from writing the Lambda in Java:
+- Logger configuration: Configuring the logger is not as straight forward as implementing the `zerolog` library in Go. I've used Log4J with SLF4J previously, but I forgot how much more work it is to configure. Just requiring the use of the `log4j2.xml` is significantly more work than programmatically configuring the logger in Go. This is more quickly summarized by the steps outlined in [Implementing advanced logging with Log4j2 and SLF4J](https://docs.aws.amazon.com/lambda/latest/dg/java-logging.html#java-logging-log4j2), and the need to add an XML file, include a build dependency (aws-lambda-java-log4j2). 
+- Cold start times: Java cold-start times are twice as slow as their Go counterparts. On average, cold-start times were 2.5x faster for `GET /games/{gameID}` using Go Lambda deployments vs Java (2.5s vs 6.25s, respectively)

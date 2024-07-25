@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
+	"pickupgamesapi/types"
 	"time"
 
+	valid "github.com/asaskevich/govalidator"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -15,24 +18,24 @@ import (
 )
 
 type GameBase struct {
-	Category       string `json:"category" dynamodbav:"Category"`
-	DurationMins   int    `json:"durationMins" dynamodbav:"DurationMins"`
-	Location       string `json:"location" dynamodbav:"Location"`
-	Name           string `json:"name" dynamodbav:"Name"`
-	NumTeams       int    `json:"numTeams" dynamodbav:"NumTeams"`
-	SignupFeeCents int    `json:"signupFeeCents" dynamodbav:"SignupFeeCents"`
-	SplitFeeCents  int    `json:"splitFeeCents" dynamodbav:"SplitFeeCents"`
-	TeamSize       int    `json:"teamSize" dynamodbav:"TeamSize"`
+	Category       string   `json:"category" dynamodbav:"Category"`
+	DurationMins   int      `json:"durationMins" dynamodbav:"DurationMins"`
+	Location       string   `json:"location" dynamodbav:"Location"`
+	Name           string   `json:"name" dynamodbav:"Name"`
+	NumTeams       int      `json:"numTeams" dynamodbav:"NumTeams"`
+	SignupFeeCents int      `json:"signupFeeCents" dynamodbav:"SignupFeeCents" valid:"-"`
+	SplitFeeCents  int      `json:"splitFeeCents" dynamodbav:"SplitFeeCents" valid:"-"`
+	TeamSize       int      `json:"teamSize" dynamodbav:"TeamSize"`
+	Roster         []string `json:"roster" dynamodbav:"Roster"`
+	WaitList       []string `json:"waitList" dynamodbav:"WaitList"`
 }
 
 // Game represents a game as returned by the API
 type Game struct {
 	GameBase
-
+	Owner     string    `json:"owner"`
 	GameID    string    `json:"gameId"`
-	Roster    []string  `json:"roster"`
 	StartTime time.Time `json:"startTime"`
-	Waitlist  []string  `json:"waitlist"`
 }
 
 type GameList struct {
@@ -43,9 +46,8 @@ func GameFromGameRecord(gameRecord GameRecord) Game {
 	return Game{
 		GameBase:  gameRecord.GameBase,
 		GameID:    gameRecord.GameID,
-		Roster:    gameRecord.Roster,
 		StartTime: time.Unix(gameRecord.StartTime, 0),
-		Waitlist:  gameRecord.Waitlist,
+		Owner:     gameRecord.Owner,
 	}
 }
 
@@ -53,18 +55,26 @@ func GameFromGameRecord(gameRecord GameRecord) Game {
 type GameRecord struct {
 	GameBase
 
-	GameID    string   `dynamodbav:"GameID"`
-	Owner     string   `dynamodbav:"Owner"`
-	Roster    []string `dynamodbav:"Roster"`
-	StartTime int64    `dynamodbav:"StartTime"` // Unix timestamp -- seconds since 1970
-	Waitlist  []string `dynamodbav:"Waitlist"`
+	GameID    string `dynamodbav:"GameID"`
+	Owner     string `dynamodbav:"Owner"`
+	StartTime int64  `dynamodbav:"StartTime"` // Unix timestamp -- seconds since 1970
 }
 
 // NewGameRequest is the accepted request body for creating a new game
 type NewGameRequest struct {
 	GameBase
-	Requester string    `json:"-"`
+	Requester string    `json:"-" valid:"-"`
 	StartTime time.Time `json:"startTime"`
+}
+
+func (r *NewGameRequest) ValidateRequest(ctx context.Context) error {
+	logger := log.Ctx(ctx)
+	_, err := valid.ValidateStruct(r)
+	if err != nil {
+		logger.Err(err).Msg("failed to validate request")
+		return &types.InvalidRequestError{ErrorCodeVal: 400, Message: fmt.Sprintf("Invalid request: %s", err.Error())}
+	}
+	return nil
 }
 
 // NewUserRequest
@@ -151,21 +161,20 @@ func (h *Handler) handler(ctx context.Context, event events.APIGatewayV2HTTPRequ
 	ctx = log.Logger.With().Caller().Logger().WithContext(ctx)
 	log.Ctx(ctx).Debug().Interface("event", event).Msg("received request")
 	switch event.RouteKey {
-	case "POST /signup":
+	case "POST /auth/signup":
 		{
 			requestBody := event.Body
 			newUserRequest := NewUserRequest{}
 			if err := json.Unmarshal([]byte(requestBody), &newUserRequest); err != nil || newUserRequest.MissingFields() {
 				return returnClientError("Invalid request body")
 			}
-			if err := h.SignUpUser(ctx, newUserRequest); err != nil {
+			newUser, err := h.SignUpUser(ctx, newUserRequest)
+			if err != nil {
 				return returnServerError(err)
 			}
-			return events.APIGatewayV2HTTPResponse{
-				StatusCode: 200,
-			}, nil
+			return returnSuccess(newUser)
 		}
-	case "POST /signin":
+	case "POST /auth/signin":
 		{
 			requestBody := event.Body
 			signInRequest := SignInRequest{}
@@ -188,6 +197,9 @@ func (h *Handler) handler(ctx context.Context, event events.APIGatewayV2HTTPRequ
 				log.Error().Err(err).Msg("failed to unmarshal request body")
 				return returnClientError("Invalid request body")
 			}
+			if err := newGameRequest.ValidateRequest(ctx); err != nil {
+				return returnClientError(err.Error())
+			}
 			newGameRequest.Requester = requester
 			createGameResponse, err := h.CreateGame(ctx, newGameRequest)
 			if err != nil {
@@ -208,17 +220,21 @@ func (h *Handler) handler(ctx context.Context, event events.APIGatewayV2HTTPRequ
 			}
 			return returnSuccess(getGameResponse)
 		}
-	case "POST /games/{gameID}/register":
+	case "PATCH /games/{gameID}/join":
 		{
 			gameID := event.PathParameters["gameID"]
-			requester := event.RequestContext.Authorizer.JWT.Claims["email"]
+			requester, ok := event.RequestContext.Authorizer.JWT.Claims["email"]
+			if !ok {
+				// Cognito returns an ID token and an access token, only the ID token contains the email
+				return returnClientError("token provided does not contain email")
+			}
 			registerGameResponse, err := h.RegisterForGame(ctx, gameID, requester)
 			if err != nil {
 				return returnServerError(err)
 			}
 			return returnSuccess(registerGameResponse)
 		}
-	case "POST /games/{gameID}/drop":
+	case "PATCH /games/{gameID}/drop":
 		{
 			gameID := event.PathParameters["gameID"]
 			requester := event.RequestContext.Authorizer.JWT.Claims["email"]

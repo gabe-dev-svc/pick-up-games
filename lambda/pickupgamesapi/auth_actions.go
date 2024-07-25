@@ -12,6 +12,13 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+type User struct {
+	Email       string `json:"email"`
+	FirstName   string `json:"firstName"`
+	LastName    string `json:"lastName"`
+	PhoneNumber string `json:"phoneNumber"`
+}
+
 type SignInRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -24,7 +31,7 @@ type SignInResponse struct {
 	TokenExpiration time.Time `json:"tokenExpiration"`
 }
 
-func (h *Handler) SignUpUser(ctx context.Context, newUserRequest NewUserRequest) error {
+func (h *Handler) SignUpUser(ctx context.Context, newUserRequest NewUserRequest) (User, error) {
 	log := log.Ctx(ctx).With().Str("operation", "SignUpUser").Logger()
 	// Use newUserRequest to AdminCreateUser in Cognito
 	adminCreateUserInput := &cognitoidentityprovider.AdminCreateUserInput{
@@ -52,7 +59,7 @@ func (h *Handler) SignUpUser(ctx context.Context, newUserRequest NewUserRequest)
 	}
 	_, err := h.AWSCognitoClient.AdminCreateUser(ctx, adminCreateUserInput)
 	if err != nil {
-		return fmt.Errorf("error creating user: %w", err)
+		return User{}, fmt.Errorf("error creating user: %w", err)
 	}
 	log.Debug().Msg("successfully created user")
 	// set user's password
@@ -64,10 +71,15 @@ func (h *Handler) SignUpUser(ctx context.Context, newUserRequest NewUserRequest)
 	}
 	_, err = h.AWSCognitoClient.AdminSetUserPassword(ctx, adminSetUserPasswordInput)
 	if err != nil {
-		return fmt.Errorf("error setting user password: %w", err)
+		return User{}, fmt.Errorf("error setting user password: %w", err)
 	}
 	log.Debug().Msg("successfully set user password")
-	return nil
+	return User{
+		Email:       newUserRequest.Email,
+		FirstName:   newUserRequest.FirstName,
+		LastName:    newUserRequest.LastName,
+		PhoneNumber: newUserRequest.PhoneNumber,
+	}, nil
 }
 
 func (h *Handler) SignInUser(ctx context.Context, signInRequest SignInRequest) (SignInResponse, error) {

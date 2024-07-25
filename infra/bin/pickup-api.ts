@@ -5,6 +5,8 @@ import { PickupApiStack } from '../lib/pickup-api-stack';
 
 const app = new cdk.App();
 new PickupApiStack(app, 'PickupApiStack', {
+  // provide the bucket name to which built artifacts are uploaded --bucket created outside of the stack previously
+  pickupGamesDeploymentBucketName: "pickupgames-api-artifacts",
   /* If you don't specify 'env', this stack will be environment-agnostic.
    * Account/Region-dependent features and context lookups will not work,
    * but a single synthesized template can be deployed anywhere. */

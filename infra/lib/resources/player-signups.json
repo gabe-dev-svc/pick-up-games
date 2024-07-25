@@ -10,7 +10,7 @@
     }
   ],
   "paths": {
-    "/signin": {
+    "/auth/signin": {
       "post": {
         "summary": "Sign in to an account",
         "operationId": "signinUser",
@@ -40,7 +40,7 @@
         }
       }
     },
-    "/signup": {
+    "/auth/signup": {
       "post": {
         "summary": "Sign up for an account",
         "operationId": "signupUser",
@@ -63,9 +63,9 @@
         }
       }
     },
-    "/games/{gameID}/register": {
-      "post": {
-        "summary": "Register for a game",
+    "/games/{gameID}/join": {
+      "patch": {
+        "summary": "Join a game",
         "security": [
           {
             "bearerAuth": []
@@ -83,7 +83,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Player registered",
+            "description": "Player joined",
             "content": {
               "application/json": {
                 "schema": {
@@ -102,7 +102,7 @@
       }
     },
     "/games/{gameID}/drop": {
-      "post": {
+      "patch": {
         "summary": "Drop from a game",
         "security": [
           {
@@ -347,7 +347,7 @@
               "type": "string"
             }
           },
-          "waitlist": {
+          "waitList": {
             "type": "array",
             "items": {
               "type": "string"

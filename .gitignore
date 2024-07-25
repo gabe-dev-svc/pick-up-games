@@ -2,6 +2,10 @@ cdk.out
 node_modules
 out
 *.zip
+*.jar
+*.class
+*.lst
 bootstrap
+.DS_Store
 # exclude binary built by go
 pickupgamesapi
