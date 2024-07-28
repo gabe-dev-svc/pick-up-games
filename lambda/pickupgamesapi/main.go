@@ -220,7 +220,7 @@ func (h *Handler) handler(ctx context.Context, event events.APIGatewayV2HTTPRequ
 			}
 			return returnSuccess(getGameResponse)
 		}
-	case "PATCH /games/{gameID}/join":
+	case "POST /games/{gameID}/registrtation":
 		{
 			gameID := event.PathParameters["gameID"]
 			requester, ok := event.RequestContext.Authorizer.JWT.Claims["email"]
@@ -234,7 +234,7 @@ func (h *Handler) handler(ctx context.Context, event events.APIGatewayV2HTTPRequ
 			}
 			return returnSuccess(registerGameResponse)
 		}
-	case "PATCH /games/{gameID}/drop":
+	case "DELETE /games/{gameID}/registration":
 		{
 			gameID := event.PathParameters["gameID"]
 			requester := event.RequestContext.Authorizer.JWT.Claims["email"]
