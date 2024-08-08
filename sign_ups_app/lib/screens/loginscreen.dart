@@ -6,6 +6,8 @@ import 'dart:convert';
 import 'homescreen.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -20,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _formKey.currentState!.save();
       // API endpoint
       const String apiHost =
-          'TODO'; // TODO: user flutter_dotenv(?) to inject environment variables
+          ''; // TODO: user flutter_dotenv(?) to inject environment variables
       const String loginPath = 'auth/signin';
 
       // Prepare the data to be sent in the POST request
@@ -51,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // Navigate to the HomeScreen
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => HomeScreen()),
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
           );
         } else {
           // If the server did not return a 200 OK response, throw an error
@@ -70,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Login'),
+        title: const Text('Login'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -80,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               TextFormField(
-                decoration: InputDecoration(labelText: 'Email'),
+                decoration: const InputDecoration(labelText: 'Email'),
                 validator: (value) {
                   if (value!.isEmpty) {
                     return 'Please enter your email';
@@ -92,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
               ),
               TextFormField(
-                decoration: InputDecoration(labelText: 'Password'),
+                decoration: const InputDecoration(labelText: 'Password'),
                 obscureText: true,
                 validator: (value) {
                   if (value!.isEmpty) {
@@ -108,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                 child: ElevatedButton(
                   onPressed: _submitForm,
-                  child: Text('Login'),
+                  child: const Text('Login'),
                 ),
               ),
             ],
